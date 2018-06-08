@@ -1,0 +1,7 @@
+(* Exercise 2.6 *)
+val yen_of_usdollar : float -> int
+val usdollar_of_yen : int -> float
+val yen_of_usdollar_message : float -> string
+val capitalize : char -> char
+
+let yen_of_usdollar = 
