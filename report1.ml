@@ -128,9 +128,16 @@ let rec filter f l =
               else filter f t
 ;;
 
-(* Exercise 5.6 
-let rec quicker l sorted =
-*)
+(* Exercise 5.6 *)
+let rec quicker l sorted = match l with
+    [] -> sorted
+  | x :: xs ->
+      let rec partition left right = function
+        [] -> quicker left (x :: (quicker right sorted))
+      | y :: ys -> if x<y then partition left (y :: right) ys
+                   else partition (y :: left) right ys
+      in partition [] [] xs
+;;
 
 (* Exercise 6.2 *)
 type nat = Zero | OneMoreThan of nat;;
@@ -155,4 +162,97 @@ let rec monus m n =
 ;;
 
 (* Exercise 6.6 *)
+type 'a tree = Lf | Br of 'a * 'a tree * 'a tree;;
+let comptree = Br(1, Br(2, Br(4, Lf, Lf), Br(5, Lf, Lf)), Br(3, Br(6, Lf, Lf), Br(7, Lf, Lf)));;
+let rec reflect = function
+    Lf -> Lf
+  | Br (x, left, right) -> Br (x, reflect right, reflect left)
+;;
+(* preorder(reflect(t)) =  reverse(postorder(t))
+   inorder(reflect(t)) = reverse(inorder(t))
+   postorder(reflect(t)) = reverse(preorder(t)) *)
+
+(* Exercise 6.9 *)
 type 'a seq = Cons of 'a * (unit -> 'a seq);;
+let rec from n = Cons (n, fun () -> from (n + 1));;
+let head (Cons (x, _)) = x;;
+let tail (Cons (_, f)) = f ();;
+let rec take n s =
+  if n = 0 then [] else head s :: take (n - 1) (tail s);;
+
+let rec sift n (Cons (x, tail)) =
+  if x mod n!=0 then Cons(x, fun () -> sift n (tail()))
+                else sift n (tail())
+;;
+let rec sieve (Cons (x, f)) = Cons (x, fun () -> sieve (sift x (f())));;
+let primes = sieve (from 2);;
+let rec nthseq n (Cons (x, f)) =
+  if n = 1 then x else nthseq (n - 1) (f());;
+(* let myprime = nthseq (1029288922+3000) primes;; *)
+
+(* Exercise 6.10 *)
+type ('a, 'b) sum = Left of 'a | Right of 'b;;
+
+let f1 (a, s) =
+  match s with
+    Left b -> Left (a, b)
+  | Right c -> Right (a, c)
+;;
+
+let f2 (ab, cd) =
+  match cd with
+    Left c -> (match ab with
+                 Left a -> Left (Left (a, c))
+               | Right b -> Right (Right (b, c)))
+  | Right d -> (match ab with
+                  Left a -> Right (Left (a, d))
+                | Right b -> Left (Right (b, d)))
+;;
+
+let f3 (f, g) = function
+                  Left a -> f a
+                | Right b -> g b
+;;
+
+(* Exercise 7.2 *)
+let incr x = x := !x + 1
+;;
+
+(* Exercise 7.4 *)
+let fact_imp n =
+  let i = ref n and res = ref 1 in
+  while (!i>0) do
+  res := !res * !i;
+  i := !i - 1;
+  done;
+  !res;;
+
+(* Exercise 7.6 *)
+(*
+# let x = ref [];;
+val x : '_a list ref = {contents = []}
+となる。'aが'_aとなっている。これは一度だけ任意の型に置換できる型変数であり、
+一度決まってしまうと二度と別の型として使用できない。
+そのため、
+# (2 :: !x, true :: !x);; に対し、
+Error: This expression has type int list
+       but an expression was expected of type bool list
+       Type int is not compatible with type bool
+というエラーを吐かれる。
+これは2 :: !xで'_aがintに置換されたため、
+その後true :: !xでboolとintをconsしようとしたことになるため。
+よって異なる型をconsすることは防がれる。
+*)
+
+(* Exercise 7.8 *)
+let rec change =
+  function
+    (_, 0) -> []
+  | ((c :: rest) as coins, total) ->
+    if c > total then change (rest, total)
+    else
+      (try
+        c :: change (coins, total - c)
+        with Failure "change" -> change (rest, total))
+  | _ -> raise (Failure "change")
+;;
